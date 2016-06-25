@@ -15,7 +15,7 @@ from ajenti.util import platform_select
 class Settings (object):
    def __init__(self):
       self.basedir = "/etc/letsencrypt.sh/"
-      self.wellknown = '/var/www/wellknown'
+      self.wellknown = '/var/www/letsencrypt'
       self.domains = 'example.com sub.example.com'
       self.cronjob = False
 
@@ -30,8 +30,8 @@ class LetsEncryptPlugin (SectionPlugin):
         arch='/etc/letsencrypt.sh/',
         osx='/opt/local/etc/letsencrypt.sh/',
     )
-    hosts_available_dir = platform_select(
-        debian='/etc/nginx/sites-available',
+    nginx_config_dir = platform_select(
+        debian='/etc/nginx/conf.d',
         centos='/etc/nginx/conf.d',
         mageia='/etc/nginx/conf.d',
         freebsd='/usr/local/etc/nginx/conf.d',
@@ -98,7 +98,6 @@ class LetsEncryptPlugin (SectionPlugin):
         copyfile(src_config, dst_config)
 
     def create_custom_config(self):
-        dir = self.etc_available_dir
         template = """
         BASEDIR=$basedir
         WELLKNOWN=$wellknown
@@ -108,22 +107,29 @@ class LetsEncryptPlugin (SectionPlugin):
             'wellknown': self.settings.wellknown
         }
 
-        #open the file
         filename = 'config'
-        filepath = dir + filename
+        filepath = self.etc_available_dir + filename
         custom_config = open(filepath, 'w')
-        #read it
         src = Template( template )
-        #do the substitution
         custom_config.write(src.safe_substitute(dict))
 
     def create_wellknown_location(self):
         template = """
-        location /.well-known/acme-challenge {
-            alias /var/www/letsencrypt.sh/;
+        location $location {
+            alias $alias;
         }
         """
-        
+        dict = {
+            'location': '/.well-known/acme-challenge',
+            'alias': self.settings.wellknown
+        }
+        filename = 'letsencrypt.conf'
+        filepath = self.nginx_config_dir + '/' + filename
+        letsencrypt_host = open(filepath, 'w')
+        src = Template( template )
+        letsencrypt_host.write(src.safe_substitute(dict))
+        self.context.notify('info', filepath)
+
 
     def call_script(self):
         cmd = self.pwd + 'libs/letsencrypt.sh/letsencrypt.sh'
@@ -141,6 +147,7 @@ class LetsEncryptPlugin (SectionPlugin):
         self.write_domain_file()
         self.copy_config_to_etc()
         self.create_custom_config()
-        self.call_script()
+        self.create_wellknown_location()
+        # self.call_script()
 
         self.context.notify('info', 'Saved')
