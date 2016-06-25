@@ -1,0 +1,28 @@
+<body> <!-- an overall plugin container panel -->
+    <pad> <!-- adds whitespace padding -->
+        <vc> <!-- horizontal container -->
+
+          <formline text="Basedir">
+            <textbox bind="basedir"/>
+          </formline>
+
+          <formline text="Wellknown">
+            <textbox bind="wellknown"/>
+          </formline>
+
+          <formline text="Domains (one per line)">
+            <codearea bind="domains" width="500" height="400"/>
+          </formline>
+
+          <formline text="Create monthly crontask">
+            <checkbox bind="cronjob" />
+          </formline>
+
+        </vc>
+
+        <box>
+          <button text="Apply" id="apply" icon="ok"/>
+        </box>
+
+    </pad>
+</body>
