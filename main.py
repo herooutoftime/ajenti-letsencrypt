@@ -22,13 +22,21 @@ class Settings (object):
 @plugin
 class LetsEncryptPlugin (SectionPlugin):
     pwd = os.path.join(os.path.dirname(os.path.realpath(__file__)), '')
-    hosts_available_dir = platform_select(
+    etc_available_dir = platform_select(
         debian='/etc/letsencrypt.sh/',
         centos='/etc/letsencrypt.sh/',
         mageia='/etc/letsencrypt.sh/',
         freebsd='/usr/local/etc/letsencrypt.sh/',
         arch='/etc/letsencrypt.sh/',
         osx='/opt/local/etc/letsencrypt.sh/',
+    )
+    hosts_available_dir = platform_select(
+        debian='/etc/nginx/sites-available',
+        centos='/etc/nginx/conf.d',
+        mageia='/etc/nginx/conf.d',
+        freebsd='/usr/local/etc/nginx/conf.d',
+        arch='/etc/nginx/sites-available',
+        osx='/opt/local/etc/nginx',
     )
 
     def init(self):
@@ -90,7 +98,7 @@ class LetsEncryptPlugin (SectionPlugin):
         copyfile(src_config, dst_config)
 
     def create_custom_config(self):
-        dir = self.hosts_available_dir
+        dir = self.etc_available_dir
         template = """
         BASEDIR=$basedir
         WELLKNOWN=$wellknown
@@ -108,6 +116,14 @@ class LetsEncryptPlugin (SectionPlugin):
         src = Template( template )
         #do the substitution
         custom_config.write(src.safe_substitute(dict))
+
+    def create_wellknown_location(self):
+        template = """
+        location /.well-known/acme-challenge {
+            alias /var/www/letsencrypt.sh/;
+        }
+        """
+        
 
     def call_script(self):
         cmd = self.pwd + 'libs/letsencrypt.sh/letsencrypt.sh'
