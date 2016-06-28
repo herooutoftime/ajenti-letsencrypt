@@ -15,7 +15,7 @@ from ajenti.util import platform_select
 class Settings (object):
    def __init__(self):
       self.basedir = "/etc/letsencrypt.sh/"
-      self.wellknown = '/var/www/letsencrypt'
+      self.wellknown = '/var/www/letsencrypt.sh/'
       self.domains = 'example.com sub.example.com'
       self.cronjob = False
 
@@ -145,7 +145,7 @@ class LetsEncryptPlugin (SectionPlugin):
     	self.binder.populate()
         self.write_dir()
         self.write_domain_file()
-        self.copy_config_to_etc()
+        # self.copy_config_to_etc()
         self.create_custom_config()
         self.create_wellknown_location()
         self.call_script()
