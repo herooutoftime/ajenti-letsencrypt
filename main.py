@@ -148,6 +148,6 @@ class LetsEncryptPlugin (SectionPlugin):
         self.copy_config_to_etc()
         self.create_custom_config()
         self.create_wellknown_location()
-        # self.call_script()
+        self.call_script()
 
         self.context.notify('info', 'Saved')
