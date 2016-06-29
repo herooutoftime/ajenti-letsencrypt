@@ -75,7 +75,7 @@ class LetsEncryptPlugin (SectionPlugin):
     	filename = 'domains.txt'
         filepath = self.settings.basedir + filename
     	file = open(filepath, 'w')
-    	file.write(self.settings.domains)
+    	file.write(self.find('domains').value)
     	file.close()
 
     def read_domain_file(self):
