@@ -116,9 +116,11 @@ class LetsEncryptPlugin (SectionPlugin):
 
     def create_wellknown_location(self):
         template = """
-        location $location {
-            alias $alias;
+server {
+    location $location {
+        alias $alias;
         }
+}
         """
         dict = {
             'location': '/.well-known/acme-challenge',
