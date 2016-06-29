@@ -117,7 +117,7 @@ class LetsEncryptPlugin (SectionPlugin):
     def create_wellknown_location(self):
         template = """
 server {
-    server_name $domains
+    server_name $domains;
     listen *:80;
     location $location {
         alias $alias;
