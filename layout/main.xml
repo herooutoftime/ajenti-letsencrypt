@@ -1,6 +1,6 @@
 <body> <!-- an overall plugin container panel -->
     <pad> <!-- adds whitespace padding -->
-        <vc> <!-- horizontal container -->
+        <vc binder:context="letsencryptconfig"> <!-- horizontal container -->
 
           <formline text="Basedir">
             <textbox bind="basedir"/>
@@ -11,11 +11,11 @@
           </formline>
 
           <formline text="Domains (one per line)">
-            <codearea bind="domains" width="500" height="400"/>
+            <codearea id="domains" bind="domains" width="500" height="400"/>
           </formline>
 
           <formline text="Create monthly crontask">
-            <checkbox bind="cronjob" />
+            <checkbox id="cronjob" bind="cronjob" />
           </formline>
 
         </vc>
