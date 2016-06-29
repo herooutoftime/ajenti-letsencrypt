@@ -33,7 +33,7 @@ class LetsEncryptPlugin (SectionPlugin):
     pwd = os.path.join(os.path.dirname(os.path.realpath(__file__)), '')
 
     nginx_config_dir = platform_select(
-        debian='/etc/nginx.custom.d',
+        debian='/etc/nginx/conf.d',
         centos='/etc/nginx/conf.d',
         mageia='/etc/nginx/conf.d',
         freebsd='/usr/local/etc/nginx/conf.d',
@@ -66,7 +66,7 @@ class LetsEncryptPlugin (SectionPlugin):
     	self.binder.populate()
 
     def on_page_load(self):
-        domains = self.read_domain_file()
+        domains = os.linesep.join(self.read_domain_file())
         cron = self.check_cron()
         self.find('domains').value = str(domains)
         self.find('cronjob').value = cron
@@ -84,7 +84,7 @@ class LetsEncryptPlugin (SectionPlugin):
     	file = open(filepath)
     	with file as f:
             lines = f.readlines()
-        return os.linesep.join(lines)
+        return lines
 
     def write_dir(self):
     	uid = pwd.getpwnam("www-data").pw_uid
@@ -117,17 +117,19 @@ class LetsEncryptPlugin (SectionPlugin):
     def create_wellknown_location(self):
         template = """
 server {
-    listen *:80
+    server_name $domains
+    listen *:80;
     location $location {
         alias $alias;
-        }
+    }
 }
         """
         dict = {
             'location': '/.well-known/acme-challenge',
-            'alias': self.settings.wellknown
+            'alias': self.settings.wellknown,
+            'domains': " ".join(self.read_domain_file())
         }
-        filename = 'letsencrypt.conf'
+        filename = '00_letsencrypt.conf'
         filepath = self.nginx_config_dir + '/' + filename
         file = open(filepath, 'w')
         src = Template( template )
