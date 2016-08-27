@@ -26,6 +26,7 @@ class Settings (object):
       self.domains = 'example.com sub.example.com'
       self.cronjob = False
       self.results = ''
+      self.domainfile = 'domains.txt'
 
 @plugin
 class LetsEncryptPlugin (SectionPlugin):
@@ -66,21 +67,25 @@ class LetsEncryptPlugin (SectionPlugin):
     	self.binder.populate()
 
     def on_page_load(self):
-        domains = os.linesep.join(self.read_domain_file())
+        filepath = self.settings.basedir + self.settings.domainfile
+        domains = ''
+        if os.path.isfile(filepath):
+            domains = os.linesep.join(self.read_domain_file())
         cron = self.check_cron()
         self.find('domains').value = str(domains)
         self.find('cronjob').value = cron
 
     def write_domain_file(self):
-    	filename = 'domains.txt'
-        filepath = self.settings.basedir + filename
+        filepath = self.settings.basedir + self.settings.domainfile
     	file = open(filepath, 'w')
-    	file.write(self.find('domains').value)
+    	if file.write(self.find('domains').value):
+            self.context.notify('info', 'Domain file written')
+        else:
+            self.context.notify('error', 'Domain file error')
     	file.close()
 
     def read_domain_file(self):
-        filename = 'domains.txt'
-        filepath = self.settings.basedir + filename
+        filepath = self.settings.basedir + self.settings.domainfile
     	file = open(filepath)
     	with file as f:
             lines = f.readlines()
@@ -115,6 +120,9 @@ class LetsEncryptPlugin (SectionPlugin):
         file.close()
 
     def create_wellknown_location(self):
+        if not self.check_nginx_custom_dir():
+            return False
+
         template = """
 server {
     server_name $domains;
@@ -150,6 +158,14 @@ server {
 
     #def remove cron(self):
 
+    def check_nginx_custom_dir(self):
+        if not os.path.isdir(self.nginx_config_dir):
+            if os.makedirs(self.nginx_config_dir):
+                self.context.notify('info', 'NGINX custom dir created')
+                return True
+            else:
+                self.context.notify('error', 'NGINX custom dir error')
+                return False
 
     def check_cron(self):
         filename = 'letsencrypt'
