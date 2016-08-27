@@ -163,7 +163,7 @@ server {
         self.context.notify('info', 'Certificates requested')
 
     def create_cron(self):
-        file = open(self.settings.crontab_dir + '/' + self.settings.cronfile, 'w')
+        file = open(self.crontab_dir + '/' + self.settings.cronfile, 'w')
         template = "0 0 1 * * " + self.pwd + 'libs/letsencrypt.sh/letsencrypt.sh -c'
         if file.write(template):
             self.context.notify('info', 'Cron job written')
@@ -172,8 +172,8 @@ server {
         file.close()
 
     def remove_cron(self):
-        if os.path.isfile(self.settings.crontab_dir + '/' + self.settings.cronfile):
-            if os.remove(self.settings.crontab_dir + '/' + self.settings.cronfile):
+        if os.path.isfile(self.crontab_dir + '/' + self.settings.cronfile):
+            if os.remove(self.crontab_dir + '/' + self.settings.cronfile):
                 self.context.notify('info', 'Cron removed')
                 return True
             else:
@@ -190,7 +190,7 @@ server {
                 return False
 
     def check_cron(self):
-        if os.path.isfile(self.settings.crontab_dir + '/' + self.settings.cronfile):
+        if os.path.isfile(self.crontab_dir + '/' + self.settings.cronfile):
             return True
         return False
 
