@@ -22,12 +22,14 @@ class Settings (object):
           arch='/etc/letsencrypt.sh/',
           osx='/opt/local/etc/letsencrypt.sh/',
       )
+
       self.wellknown = '/var/www/letsencrypt.sh/'
       self.domains = 'example.com sub.example.com'
       self.cronjob = False
       self.cronfile = 'letsencrypt'
       self.results = ''
       self.domainfile = 'domains.txt'
+      self.nginx_config = '00_letsencrypt.conf'
 
 @plugin
 class LetsEncryptPlugin (SectionPlugin):
@@ -42,6 +44,7 @@ class LetsEncryptPlugin (SectionPlugin):
         arch='/etc/nginx/sites-available',
         osx='/opt/local/etc/nginx',
     )
+
     crontab_dir = platform_select(
         debian='/etc/cron.d',
         centos='/etc/cron.d',
@@ -50,6 +53,7 @@ class LetsEncryptPlugin (SectionPlugin):
         arch='/etc/cron.d',
         osx='/opt/local/etc/cron.d',
     )
+
     has_domains = False
 
     def init(self):
@@ -85,12 +89,10 @@ class LetsEncryptPlugin (SectionPlugin):
             return
 
         file = open(filepath, 'w')
-        self.context.notify('info', self.find('domains').value)
-        if file.write(self.find('domains').value):
-            self.context.notify('info', 'Domain file written')
+        if file.write(self.find('domains').value) is None:
             self.has_domains = True
         else:
-            self.context.notify('error', 'Domain file error')
+            self.context.notify('error', 'Domain file write error')
     	file.close()
 
     def read_domain_file(self):
@@ -128,7 +130,8 @@ class LetsEncryptPlugin (SectionPlugin):
         filepath = self.settings.basedir + filename
         file = open(filepath, 'w')
         src = Template( template )
-        file.write(src.safe_substitute(dict))
+        if file.write(src.safe_substitute(dict)) is not None:
+            self.context.notify('info', 'Letsencrypt error')
         file.close()
 
     def create_wellknown_location(self):
@@ -149,44 +152,26 @@ server {
             'alias': self.settings.wellknown,
             'domains': " ".join(self.read_domain_file())
         }
-        filename = '00_letsencrypt.conf'
-        filepath = self.nginx_config_dir + '/' + filename
+        filepath = self.nginx_config_dir + '/' + self.settings.nginx_config
         file = open(filepath, 'w')
         src = Template( template )
-        if file.write(src.safe_substitute(dict)):
-            self.context.notify('info', 'WELLKNOWN config written')
+        if file.write(src.safe_substitute(dict)) is not None:
+            self.context.notify('info', 'WELLKNOWN config write error')
         file.close()
-
-    def request_certificates(self):
-        cmd = self.pwd + 'libs/letsencrypt.sh/letsencrypt.sh'
-        call([cmd, "-c"])
-        self.context.notify('info', 'Certificates requested')
 
     def create_cron(self):
         file = open(self.crontab_dir + '/' + self.settings.cronfile, 'w')
         template = "0 0 1 * * " + self.pwd + 'libs/letsencrypt.sh/letsencrypt.sh -c'
-        if file.write(template):
-            self.context.notify('info', 'Cron job written')
-        else:
+        if not file.write(template):
             self.context.notify('info', 'Cron job error')
         file.close()
 
     def remove_cron(self):
         if os.path.isfile(self.crontab_dir + '/' + self.settings.cronfile):
             if os.remove(self.crontab_dir + '/' + self.settings.cronfile):
-                self.context.notify('info', 'Cron removed')
                 return True
             else:
                 self.context.notify('info', 'Cron remove error')
-                return False
-
-    def check_nginx_custom_dir(self):
-        if not os.path.isdir(self.nginx_config_dir):
-            if os.makedirs(self.nginx_config_dir):
-                self.context.notify('info', 'NGINX custom dir created')
-                return True
-            else:
-                self.context.notify('error', 'NGINX custom dir error')
                 return False
 
     def check_cron(self):
@@ -194,8 +179,21 @@ server {
             return True
         return False
 
+    def check_nginx_custom_dir(self):
+        if not os.path.isdir(self.nginx_config_dir):
+            if os.makedirs(self.nginx_config_dir):
+                return True
+            else:
+                self.context.notify('error', 'NGINX custom dir write error')
+                return False
+
+    def request_certificates(self):
+        cmd = self.pwd + 'libs/letsencrypt.sh/letsencrypt.sh'
+        call([cmd, "-c"])
+        self.context.notify('info', 'Certificates requested')
+
     @on('apply', 'click')
-    def on_button(self):
+    def apply_button(self):
     	self.binder.update()
     	self.binder.populate()
         self.write_dir()
@@ -212,4 +210,6 @@ server {
         else:
             self.remove_cron()
 
+    @on('request', 'click')
+    def request_button(self):
         self.request_certificates()

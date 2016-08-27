@@ -17,12 +17,12 @@
           <formline text="Create monthly crontask">
             <checkbox id="cronjob" bind="cronjob" />
           </formline>
-
         </vc>
 
-        <box>
-          <button text="Apply" id="apply" icon="ok"/>
-        </box>
+        <hc>
+          <button text="{Save}" id="apply" icon="ok"/>
+          <button text="Request" id="request" icon="ok"/>
+        </hc>
 
     </pad>
 </body>
