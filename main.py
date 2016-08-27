@@ -25,8 +25,10 @@ class Settings (object):
       self.wellknown = '/var/www/letsencrypt.sh/'
       self.domains = 'example.com sub.example.com'
       self.cronjob = False
+      self.cronfile = 'letsencrypt'
       self.results = ''
       self.domainfile = 'domains.txt'
+      self.has_domains = False
 
 @plugin
 class LetsEncryptPlugin (SectionPlugin):
@@ -77,16 +79,26 @@ class LetsEncryptPlugin (SectionPlugin):
 
     def write_domain_file(self):
         filepath = self.settings.basedir + self.settings.domainfile
-    	file = open(filepath, 'w')
-    	if file.write(self.find('domains').value):
+        if not self.find('domains').value:
+            self.context.notify('info', 'No domains specified')
+            self.has_domains = False
+            return
+
+        file = open(filepath, 'w')
+        self.context.notify('info', self.find('domains').value)
+        if file.write(self.find('domains').value):
             self.context.notify('info', 'Domain file written')
+            self.has_domains = True
         else:
             self.context.notify('error', 'Domain file error')
     	file.close()
 
     def read_domain_file(self):
         filepath = self.settings.basedir + self.settings.domainfile
-    	file = open(filepath)
+    	if not open(filepath):
+            self.context.notify('error', 'Domain file could not be read')
+
+        file = open(filepath)
     	with file as f:
             lines = f.readlines()
         return lines
@@ -141,22 +153,32 @@ server {
         filepath = self.nginx_config_dir + '/' + filename
         file = open(filepath, 'w')
         src = Template( template )
-        file.write(src.safe_substitute(dict))
+        if file.write(src.safe_substitute(dict)):
+            self.context.notify('info', 'WELLKNOWN config written')
         file.close()
 
-    def call_script(self):
+    def request_certificates(self):
         cmd = self.pwd + 'libs/letsencrypt.sh/letsencrypt.sh'
         call([cmd, "-c"])
         self.context.notify('info', 'Certificates requested')
 
     def create_cron(self):
-        filename = 'letsencrypt'
-        file = open(self.crontab_dir + '/' + filename, 'w')
+        file = open(self.settings.crontab_dir + '/' + self.settings.cronfile, 'w')
         template = "0 0 1 * * " + self.pwd + 'libs/letsencrypt.sh/letsencrypt.sh -c'
-        file.write(template)
+        if file.write(template):
+            self.context.notify('info', 'Cron job written')
+        else:
+            self.context.notify('info', 'Cron job error')
         file.close()
 
-    #def remove cron(self):
+    def remove_cron(self):
+        if os.path.isfile(self.settings.crontab_dir + '/' + self.settings.cronfile):
+            if os.remove(self.settings.crontab_dir + '/' + self.settings.cronfile):
+                self.context.notify('info', 'Cron removed')
+                return True
+            else:
+                self.context.notify('info', 'Cron remove error')
+                return False
 
     def check_nginx_custom_dir(self):
         if not os.path.isdir(self.nginx_config_dir):
@@ -168,8 +190,7 @@ server {
                 return False
 
     def check_cron(self):
-        filename = 'letsencrypt'
-        if os.path.isfile(self.crontab_dir + '/' + filename):
+        if os.path.isfile(self.settings.crontab_dir + '/' + self.settings.cronfile):
             return True
         return False
 
@@ -179,11 +200,15 @@ server {
     	self.binder.populate()
         self.write_dir()
         self.write_domain_file()
-        # self.copy_config_to_etc()
+        if not self.has_domains:
+            return
+
         self.create_custom_config()
         self.create_wellknown_location()
 
         if self.settings.cronjob:
             self.create_cron()
+        else:
+            self.remove_cron()
 
-        self.call_script()
+        self.request_certificates()
