@@ -28,7 +28,6 @@ class Settings (object):
       self.cronfile = 'letsencrypt'
       self.results = ''
       self.domainfile = 'domains.txt'
-      self.has_domains = False
 
 @plugin
 class LetsEncryptPlugin (SectionPlugin):
@@ -51,6 +50,7 @@ class LetsEncryptPlugin (SectionPlugin):
         arch='/etc/cron.d',
         osx='/opt/local/etc/cron.d',
     )
+    has_domains = False
 
     def init(self):
         self.title = 'LetsEncrypt'  # those are not class attributes and can be only set in or after init()
@@ -200,6 +200,7 @@ server {
     	self.binder.populate()
         self.write_dir()
         self.write_domain_file()
+
         if not self.has_domains:
             return
 
