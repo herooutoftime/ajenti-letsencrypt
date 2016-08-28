@@ -14,13 +14,17 @@
             <codearea id="domains" bind="domains" width="500" height="400"/>
           </formline>
 
-          <formline text="Create monthly crontask">
+          <formline text="Create crontask">
             <checkbox id="cronjob" bind="cronjob" />
+          </formline>
+
+          <formline text="Certificate renewal">
+            <checkbox id="renewal" bind="renewal" />
           </formline>
         </vc>
 
         <hc>
-          <button text="{Save}" id="apply" icon="ok"/>
+          <button text="{Save}" id="save" icon="ok"/>
           <button text="Request" id="request" icon="ok"/>
         </hc>
 

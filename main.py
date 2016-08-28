@@ -1,16 +1,19 @@
 import pwd
 import grp
 import os
+import subprocess
+import json
 
 from string import Template
 from shutil import copyfile
-from subprocess import call
 
 from ajenti.api import *
 from ajenti.plugins.main.api import SectionPlugin
 from ajenti.ui import on
 from ajenti.ui.binder import Binder
 from ajenti.util import platform_select
+
+from pprint import pprint
 
 class Settings (object):
    def __init__(self):
@@ -188,13 +191,20 @@ server {
                 return False
 
     def request_certificates(self):
-        cmd = self.pwd + 'libs/letsencrypt.sh/letsencrypt.sh'
-        call([cmd, "-c"])
-        self.context.notify('info', 'Certificates requested')
+        params = [self.pwd + 'libs/letsencrypt.sh/letsencrypt.sh', '-c']
+        if self.find('renewal').value:
+            params.append('--force')
 
-    @on('apply', 'click')
-    def apply_button(self):
-    	self.binder.update()
+        p = subprocess.Popen(params, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = p.communicate()
+
+        if out:
+            self.context.notify('info', 'OUT: ' + out)
+        if err:
+            self.context.notify('info', 'ERR: ' + err)
+
+    def save(self):
+        self.binder.update()
     	self.binder.populate()
         self.write_dir()
         self.write_domain_file()
@@ -210,6 +220,11 @@ server {
         else:
             self.remove_cron()
 
+    @on('save', 'click')
+    def save_button(self):
+        self.save()
+
     @on('request', 'click')
     def request_button(self):
+        self.save()
         self.request_certificates()
