@@ -108,7 +108,7 @@ class LetsEncryptPlugin (SectionPlugin):
             lines = f.readlines()
         return lines
 
-    def write_dir(self):
+    def create_folders(self):
     	uid = pwd.getpwnam("www-data").pw_uid
     	gid = grp.getgrnam("www-data").gr_gid
 
@@ -137,7 +137,7 @@ class LetsEncryptPlugin (SectionPlugin):
             self.context.notify('info', 'Letsencrypt error')
         file.close()
 
-    def create_wellknown_location(self):
+    def create_wellknown(self):
         if not self.check_nginx_custom_dir():
             return False
 
@@ -206,14 +206,14 @@ server {
     def save(self):
         self.binder.update()
     	self.binder.populate()
-        self.write_dir()
+        self.create_folders()
         self.write_domain_file()
 
         if not self.has_domains:
             return
 
         self.create_custom_config()
-        self.create_wellknown_location()
+        self.create_wellknown()
 
         if self.settings.cronjob:
             self.create_cron()
