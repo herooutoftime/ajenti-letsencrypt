@@ -8,7 +8,7 @@ Easily create Let's Encrypt signed certificates to secure your server
 
 ```
 # Clone this repository to `<ajenti_source>/plugins` or `/var/lib/ajenti/plugins`
-git clone git@github.com:herooutoftime/ajenti-letsencrypt.git letsencrypt
+git clone https://github.com/herooutoftime/ajenti-letsencrypt.git letsencrypt
 
 # Restart Ajenti
 service ajenti restart (debian)
